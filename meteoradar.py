@@ -1,4 +1,4 @@
-import hassapi as hass
+from appdaemon.plugins.hass import hassapi as hass
 
 import requests
 from datetime import datetime

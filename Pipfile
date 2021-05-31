@@ -8,6 +8,7 @@ name = "pypi"
 requests = "*"
 pydantic = "*"
 pytz = "*"
+appdaemon = "*"
 
 [requires]
 python_version = "3.9"
