@@ -1,3 +1,5 @@
+import hassapi as hass
+
 import requests
 from datetime import datetime
 from typing import List, Optional
@@ -5,6 +7,8 @@ from urllib.parse import urljoin
 import pytz
 
 from pydantic import BaseModel
+
+# ---- Client ----
 
 _RADAR = "UKBB2"
 _LOCAL_TZ = "Europe/Kiev"
@@ -59,6 +63,8 @@ class RainViewerClient:
         self.product: Optional[RainviewerProduct] = None
         self.latest_scan: Optional[RainviewerScan] = None
         self.api_data: Optional[RainViewerAPIResponse] = None
+        
+        self.success = False
 
     def update(self):
         try:
@@ -68,8 +74,11 @@ class RainViewerClient:
             self.latest_scan = self.product.scans[-1]
 
             self.updated_at = self._date_to_str(self.latest_scan.timestamp)
+            
+            self.success = True
 
         except Exception:
+            self.success = False
             return
 
     @staticmethod
@@ -89,10 +98,13 @@ class RainViewerClient:
     def sensor_data(self) -> dict:
         self.update()
         return {
-            "radar": self.radar_code,
             "updated_at": self.updated_at,
-            "jpeg_url": self.jpeg_url,
-        }
+            "data": {
+                  "radar": self.radar_code,
+                  "success": self.success,
+                  "jpeg_url": self.jpeg_url,
+                },
+            }
 
 
 # to create a file:
@@ -100,4 +112,29 @@ class RainViewerClient:
 # with open("radar.jpg", "wb") as fp:
 #     fp.write(jpeg_resp.content)
 
+# ---------
 
+
+class MeteoRadar(hass.Hass):
+    """
+    RainViewer Client Meteoradar Sensor
+    """
+    def initialize(self):
+        self.log(f"Initializing meteoradar for {self.args['radar']}.", level='INFO')
+        self.radar_code = self.args['radar']
+        self.client = RainViewerClient(self.radar_code)
+        
+        self.run_every(self.update_sensor, "now", 15)
+        
+    def update_sensor(self, kwargs):
+        sensor_data = self.client.sensor_data()  
+        self.log(f"{self.radar_code} update success = {sensor_data['data']['success']}", level='INFO')      
+        
+        sensor_name = f"sensor.rainviewer_meteoradar_{self.radar_code}"
+
+        self.set_state(
+          sensor_name, 
+          state=sensor_data["updated_at"], 
+          attributes=sensor_data["data"], 
+          replace=True
+        )
