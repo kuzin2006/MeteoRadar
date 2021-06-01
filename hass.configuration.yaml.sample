@@ -1,0 +1,4 @@
+# generic camera to set image as background for Lovelace Picture-entity card
+camera:
+  platform: generic
+  still_image_url: "{{ state_attr('binary_sensor.rainviewer_meteoradar_ukbb2','jpeg_url') }}"

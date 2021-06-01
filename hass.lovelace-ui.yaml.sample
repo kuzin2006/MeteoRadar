@@ -1,0 +1,6 @@
+# this will show a card with radar at background an update time as sensor state
+type: picture-entity
+entity: sensor.rainviewer_meteoradar_ukbb2
+image: 'https://demo.home-assistant.io/stub_config/bedroom.png'
+name: Meteoradar
+camera_image: camera.generic_camera

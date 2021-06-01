@@ -1,0 +1,5 @@
+meteoradar:
+  module: meteoradar
+  class: MeteoRadar
+  radar: UKBB2  # see https://data.rainviewer.com/images/ dir names for more
+  update_interval: 30  # seconds, optional, default  is 300

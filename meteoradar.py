@@ -1,4 +1,4 @@
-from appdaemon.plugins.hass import hassapi as hass
+import hassapi as hass
 
 import requests
 from datetime import datetime
@@ -55,7 +55,7 @@ class RainViewerClient:
     """
     Obtain data from RainViewer API
     """
-    def __init__(self, radar_code):
+    def __init__(self, radar_code: str):
         self.radar_code = radar_code
         self.api_url = f"https://data.rainviewer.com/images/{radar_code}/0_products.json"
         self.updated_at: str = ""
@@ -83,6 +83,7 @@ class RainViewerClient:
 
     @staticmethod
     def _date_to_str(utc_dt: datetime):
+    
         local_tz = pytz.timezone(_LOCAL_TZ)
         local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
 
@@ -106,12 +107,6 @@ class RainViewerClient:
                 },
             }
 
-
-# to create a file:
-# jpeg_resp = requests.get(jpeg_url)
-# with open("radar.jpg", "wb") as fp:
-#     fp.write(jpeg_resp.content)
-
 # ---------
 
 
@@ -119,12 +114,19 @@ class MeteoRadar(hass.Hass):
     """
     RainViewer Client Meteoradar Sensor
     """
-    def initialize(self):
-        self.log(f"Initializing meteoradar for {self.args['radar']}.", level='INFO')
-        self.radar_code = self.args['radar']
-        self.client = RainViewerClient(self.radar_code)
+    def initialize(self):        
+        self.radar_code = self.args.get('radar', _RADAR)
         
-        self.run_every(self.update_sensor, "now", 15)
+        self.log(
+            f"Initializing meteoradar for {self.args['radar']}, timezone: {_LOCAL_TZ}", 
+            level='INFO'
+            )
+        
+        self.client = RainViewerClient(radar_code=self.radar_code)
+        
+        self.update_interval = self.args.get("update_interval", 300)
+        self.log(f"Update interval: {self.update_interval}s.", level='INFO')
+        self.run_every(self.update_sensor, "now", self.update_interval)
         
     def update_sensor(self, kwargs):
         sensor_data = self.client.sensor_data()  
@@ -138,3 +140,7 @@ class MeteoRadar(hass.Hass):
           attributes=sensor_data["data"], 
           replace=True
         )
+        
+        
+    
+        
